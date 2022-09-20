@@ -1,9 +1,12 @@
-use bevy::prelude::*;
+use bevy::{prelude::*, ecs::bundle, render::color};
 use std::time::Duration;
 use crate::ant::*;
 
 const TIME_STEP: f32 = 1.0 / 60.0;
 const PHEROMONE_LIFETIME: f32 = 10.0;
+
+const RED_FOOD: Color = Color::rgba(1.0, 0.0, 0.0, 1.0);
+const BLUE_HOME: Color = Color::rgba(0.0, 0.0, 1.0, 1.0);
 
 enum PheromoneType {
     HomeMarker,
@@ -22,11 +25,47 @@ struct Pheromone {
     time: Timer,
 }
 
+#[derive(Bundle)]
+struct PheromoneBundle {
+    pheromone: Pheromone,
+
+    #[bundle]
+    sprite_bundle: SpriteBundle
+}
+
 impl Default for Pheromone {
     fn default() -> Self {
         Pheromone { 
             pheromone_type: (PheromoneType::HomeMarker),
             time: Timer::new(Duration::from_secs(PHEROMONE_LIFETIME as u64), false)
+        }
+    }
+}
+
+impl PheromoneBundle {
+    fn new(pheromone_type: PheromoneType, position: Vec3) -> PheromoneBundle {
+        let color: Color;
+        match pheromone_type {
+            PheromoneType::HomeMarker => color = BLUE_HOME,
+            PheromoneType::FoodMarker => color = RED_FOOD,
+        }
+        PheromoneBundle {
+            pheromone: Pheromone {
+                pheromone_type: pheromone_type,
+                ..default()
+            },
+            sprite_bundle: SpriteBundle {
+                    sprite: Sprite {
+                        color: color,
+                        ..default()
+                    },
+                    transform: Transform {
+                        translation: position,
+                        scale: Vec3::new(5.0, 5.0, 5.0),
+                        ..default()
+                    },
+                ..default()   
+            } 
         }
     }
 }
@@ -60,29 +99,17 @@ fn spawn_pheromones(
     mut commands: Commands,
     time: Res<Time>,
     mut config: ResMut<PheromoneSpawnConfig>,
-    mut ants: Query<&mut Transform, With<Ant>>,
+    ants: Query<(&Ant, &Transform)>,
 ) {
     // tick the timer
     config.timer.tick(time.delta());
 
     if config.timer.finished() {
-        for transform in &mut ants{
-            commands.spawn()
-                .insert(Pheromone {
-                    ..default()
-                })
-                .insert_bundle(SpriteBundle {
-                    sprite: Sprite {
-                        color: Color::Rgba { red: 0.0, green: 0.0, blue: 1.0, alpha: 1.0 },
-                        ..default()
-                    },
-                    transform: Transform {
-                        translation: transform.translation,
-                        scale: Vec3::new(5.0, 5.0, 5.0),
-                        ..default()
-                    },
-                ..default()
-            });
+        for (ant, transform) in &ants{
+            match ant.state {
+                AntState::Forage => commands.spawn_bundle(PheromoneBundle::new(PheromoneType::HomeMarker, transform.translation)),
+                AntState::ToHome => commands.spawn_bundle(PheromoneBundle::new(PheromoneType::FoodMarker, transform.translation)),
+            };
         }
     }
 }
