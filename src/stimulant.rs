@@ -1,9 +1,9 @@
-use bevy::{prelude::*, ecs::bundle, render::color};
+use bevy::{prelude::*, sprite::collide_aabb::{collide, Collision}, ecs::bundle, render::color};
 use std::time::Duration;
 use crate::ant::*;
 
 const TIME_STEP: f32 = 1.0 / 60.0;
-const PHEROMONE_LIFETIME: f32 = 10.0;
+const PHEROMONE_LIFETIME: f32 = 30.0;
 
 const RED_FOOD: Color = Color::rgba(1.0, 0.0, 0.0, 1.0);
 const BLUE_HOME: Color = Color::rgba(0.0, 0.0, 1.0, 1.0);
@@ -30,7 +30,7 @@ struct PheromoneBundle {
     pheromone: Pheromone,
 
     #[bundle]
-    sprite_bundle: SpriteBundle
+    sprite_bundle: SpriteBundle,
 }
 
 impl Default for Pheromone {
@@ -65,13 +65,13 @@ impl PheromoneBundle {
                         ..default()
                     },
                 ..default()   
-            } 
+            },
         }
     }
 }
 
 #[derive(Component)]
-struct Collider;
+pub struct Collider;
 
 struct PheromoneSpawnConfig {
     /// How often to spawn a new bomb? (repeating timer)
@@ -91,7 +91,7 @@ impl Plugin for StimulantPlugin {
 
 fn setup(mut commands: Commands) {
     commands.insert_resource(PheromoneSpawnConfig {
-        timer: Timer::new(Duration::from_secs(1), true),
+        timer: Timer::new(Duration::from_secs_f32(0.5), true),
     })
 }
 

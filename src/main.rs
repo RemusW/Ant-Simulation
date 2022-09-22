@@ -1,4 +1,4 @@
-use bevy::{prelude::*};
+use bevy::{prelude::*, sprite::collide_aabb::{collide, Collision}, ecs::bundle, render::color};
 use ant::*;
 use stimulant::*;
 mod ant;
@@ -49,6 +49,7 @@ fn mouse_button_input(
             
             commands.spawn()
             .insert(Food)
+            .insert(Collider)
             .insert_bundle(SpriteBundle {
                 sprite: Sprite {
                     color: Color::Rgba { red: 0.0, green: 1.0, blue: 0.0, alpha: 1.0 },
