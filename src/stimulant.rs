@@ -1,4 +1,4 @@
-use bevy::{prelude::*, sprite::collide_aabb::{collide, Collision}, ecs::bundle, render::color};
+use bevy::{prelude::*};
 use std::time::Duration;
 use crate::ant::*;
 
@@ -14,14 +14,18 @@ enum PheromoneType {
 }
 
 #[derive(Component)]
+pub struct Collider;
+
+#[derive(Component)]
 pub struct Stimulant;
 
 #[derive(Component)]
 pub struct Food;
 
 #[derive(Component)]
-struct Pheromone {
+pub struct Pheromone {
     pheromone_type: PheromoneType,
+    pub intensity: f32,
     time: Timer,
 }
 
@@ -37,6 +41,7 @@ impl Default for Pheromone {
     fn default() -> Self {
         Pheromone { 
             pheromone_type: (PheromoneType::HomeMarker),
+            intensity: 0.0,
             time: Timer::new(Duration::from_secs(PHEROMONE_LIFETIME as u64), false)
         }
     }
@@ -70,8 +75,6 @@ impl PheromoneBundle {
     }
 }
 
-#[derive(Component)]
-pub struct Collider;
 
 struct PheromoneSpawnConfig {
     /// How often to spawn a new bomb? (repeating timer)
@@ -126,6 +129,7 @@ fn pheromone_lifecycle (
         
         // Decrease the alpha every frame
         let newalpha = sprite.color.a()-(1.0/PHEROMONE_LIFETIME)*TIME_STEP;
+        pheromone.intensity = newalpha;
         sprite.color.set_a(newalpha);
         if pheromone.time.finished() {
             commands.entity(entity).despawn();

@@ -1,8 +1,9 @@
-use bevy::{prelude::*, sprite::collide_aabb::{collide, Collision}, ecs::bundle, render::color};
+use bevy::{prelude::*};
 use ant::*;
 use stimulant::*;
 mod ant;
 mod stimulant;
+mod sensor;
 
 fn main() {
     App::new()
