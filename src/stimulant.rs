@@ -8,7 +8,8 @@ const PHEROMONE_LIFETIME: f32 = 30.0;
 const RED_FOOD: Color = Color::rgba(1.0, 0.0, 0.0, 1.0);
 const BLUE_HOME: Color = Color::rgba(0.0, 0.0, 1.0, 1.0);
 
-enum PheromoneType {
+#[derive(Debug)]
+pub enum PheromoneType {
     HomeMarker,
     FoodMarker,
 }
@@ -24,13 +25,13 @@ pub struct Food;
 
 #[derive(Component)]
 pub struct Pheromone {
-    pheromone_type: PheromoneType,
+    pub pheromone_type: PheromoneType,
     pub intensity: f32,
     time: Timer,
 }
 
 #[derive(Bundle)]
-struct PheromoneBundle {
+pub struct PheromoneBundle {
     pheromone: Pheromone,
 
     #[bundle]
@@ -48,7 +49,7 @@ impl Default for Pheromone {
 }
 
 impl PheromoneBundle {
-    fn new(pheromone_type: PheromoneType, position: Vec3) -> PheromoneBundle {
+    pub fn new(pheromone_type: PheromoneType, position: Vec3) -> PheromoneBundle {
         let color: Color;
         match pheromone_type {
             PheromoneType::HomeMarker => color = BLUE_HOME,

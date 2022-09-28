@@ -1,10 +1,10 @@
-use bevy::{sprite::{MaterialMesh2dBundle, Mesh2dHandle}, prelude::*, sprite::collide_aabb::collide};
+use bevy::{sprite::{MaterialMesh2dBundle, Mesh2dHandle, Material2d}, prelude::*, sprite::collide_aabb::collide};
 use crate::stimulant::*;
 use crate::ant::*;
 
 // Sensor configs
-pub const SENSOR_ANGLE: f32 = 55.0; 
-const SENSOR_RADIUS: f32 = 100.0;
+pub const SENSOR_ANGLE: f32 = 40.0; 
+const SENSOR_RADIUS: f32 = 50.0;
 
 #[derive(Bundle)]
 pub struct SensorBundle {
@@ -37,11 +37,11 @@ impl SensorBundle {
         let pos: Vec3;
         match sensorposition {
             SensorPosition::Left =>
-                pos = Vec3::new(-200.0, 150.0, 0.0),
+                pos = Vec3::new(-100.0, 100.0, 0.0),
             SensorPosition::Right =>
-                pos = Vec3::new(0.0, 150.0, 0.0),
+                pos = Vec3::new(100.0, 100.0, 0.0),
             SensorPosition::Center =>
-                pos = Vec3::new(200.0, 150.0, 0.0),
+                pos = Vec3::new(0.0, 150.0, 0.0),
         }
         SensorBundle {
             sensor: Sensor { intensity: 0.0, positioning: sensorposition },
@@ -61,34 +61,34 @@ impl SensorBundle {
 
 pub fn update_sensor(
    ants: Query<&Ant>,
-   mut sensors: Query<(&Parent, &mut Sensor, &Transform), With<Collider>>,
+   mut sensors: Query<(&Parent, &mut Sensor, &GlobalTransform), With<Collider>>,
    pheromones: Query<(&Pheromone, &Transform)>,
 ) {
-    // for (ant, children) in ants.iter() {
-    //     for &child in children.iter() {
-    //         let sensor = 
-    //     }
-    // }
-    // Get the sensor's parent ant
     for (parent, mut sensor, sensor_transform) in &mut sensors {
+        // Get the sensor's parent ant
         let parent_ant = ants.get(parent.get());
         sensor.intensity = 0.;
+        // sensor_sprite.color = Color::PURPLE;
         if let Ok(ant) = parent_ant {
-            if matches!(ant.state, AntState::ToHome) {
-                
+            for (pheromone, pheromone_transform) in &pheromones {
+                let search_type: PheromoneType;
+                match ant.state {
+                    AntState::Forage => search_type = PheromoneType::FoodMarker,
+                    AntState::ToHome => search_type = PheromoneType::HomeMarker,
+                }
+                if matches!(&pheromone.pheromone_type, search_type) {
+                    let sensor_transform = sensor_transform.compute_transform();
+                    let collision = collide(
+                        sensor_transform.translation,
+                        sensor_transform.scale.truncate(),
+                        pheromone_transform.translation,
+                        pheromone_transform.scale.truncate(),
+                    );
+                    if let Some(_collision) = collision {
+                        sensor.intensity += pheromone.intensity;
+                    }
+                }
             }
-        }
-        for (pheromone, pheromone_transform) in &pheromones {
-            let collision = collide(
-                sensor_transform.translation,
-                sensor_transform.scale.truncate(),
-                pheromone_transform.translation,
-                pheromone_transform.scale.truncate(),
-            );
-            if let Some(collision) = collision {
-                sensor.intensity += pheromone.intensity;
-            }
-            print!("{:?} {}", sensor.positioning, sensor.intensity);
         }
     }
 }

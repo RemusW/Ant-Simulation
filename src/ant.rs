@@ -7,6 +7,7 @@ use rand::Rng;
 
 use crate::sensor::*;
 use crate::stimulant::{Food};
+use crate::colony::*;
 
 const TIME_STEP: f32 = 1.0 / 60.0;
 const ANT_MOVESPEED: f32 = 20.0;
@@ -16,7 +17,7 @@ const ANT_MOVESPEED: f32 = 20.0;
 pub struct AntPlugin;
 
 #[derive(Bundle)]
-struct AntBundle {
+pub struct AntBundle {
     ant: Ant,
     #[bundle]
     sprite: SpriteBundle,
@@ -39,24 +40,24 @@ pub enum AntState {
 impl Plugin for AntPlugin {
     fn build(&self, app: &mut App) {
         app
-            .add_startup_system(spawn_ants)
-            .add_system(move_ants)
-            .add_system(update_sensor);
+            .add_startup_system(spawn_colony)
+            .add_system(update_sensor)
+            .add_system(move_ants);
     }
 }
 
-fn spawn_ants(
-    mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<ColorMaterial>>,
-    asset_server: Res<AssetServer>,
-) {
-    for _i in 0..10 {
-        let ant_id = commands.spawn_bundle(AntBundle {
+impl AntBundle {
+    pub fn new(
+        asset_server: &AssetServer,
+        position: Vec2,
+    ) -> AntBundle {
+        let mut rng = rand::thread_rng();
+        AntBundle {
             sprite: SpriteBundle {
                 transform: Transform {
-                    translation: Vec3::new(0.0, 0.0, 0.0),
+                    translation: position.extend(0.),
                     scale: vec3(0.1, 0.1, 1.0),
+                    rotation: Quat::from_rotation_z(rng.gen_range(-3.14, 3.14)),
                     ..default()
                 },
                 texture: asset_server.load("ant.png"),
@@ -67,14 +68,24 @@ fn spawn_ants(
                 rotation_speed: f32::to_radians(0.0),
                 state: AntState::Forage,
             },
-        }).id();
-       let left_sensor = commands.spawn_bundle(SensorBundle::new(SensorPosition::Left, &mut meshes, &mut materials)).id();
-       let right_sensor = commands.spawn_bundle(SensorBundle::new(SensorPosition::Right, &mut meshes, &mut materials)).id();
-       let center_sensor = commands.spawn_bundle(SensorBundle::new(SensorPosition::Center, &mut meshes, &mut materials)).id();
+        }
+    }
+    
+    pub fn spawn_ant(
+        mut commands: &mut Commands,
+        meshes: &mut Assets<Mesh>,
+        materials: &mut Assets<ColorMaterial>,
+        asset_server: &mut AssetServer,
+        position: Vec2,
+    ) {
+        let ant_id = commands.spawn_bundle(AntBundle::new(&asset_server, position)).id();
+        let left_sensor = commands.spawn_bundle(SensorBundle::new(SensorPosition::Left, meshes, materials)).id();
+        let right_sensor = commands.spawn_bundle(SensorBundle::new(SensorPosition::Right, meshes, materials)).id();
+        let center_sensor = commands.spawn_bundle(SensorBundle::new(SensorPosition::Center, meshes, materials)).id();
         // Add sensors as children to the ant
-        commands.entity(ant_id).push_children(&[center_sensor]);
         commands.entity(ant_id).push_children(&[left_sensor]);
         commands.entity(ant_id).push_children(&[right_sensor]);
+        commands.entity(ant_id).push_children(&[center_sensor]);
     }
 }
 
@@ -116,28 +127,26 @@ fn move_ants(
                 let mut max_intensity = -1.0;
                 let mut max_sensor: Option<&Sensor> = None;
                 for &child in children.iter() {
-                    // let sensor: Result<(&Sensor, &Transform), QueryEntityError> = sensors.get(child);
-                    // let sensor: Option<(&Sensor, &Transform)> = sensors.get(child).ok();
-                    // let sensor = sensors.get(child);
                     if let Ok(sensor) = sensors.get(child) {
                         if sensor.intensity > max_intensity {
                             max_sensor = Some(sensor);
                             max_intensity = sensor.intensity;
-                            println!("Assigning new sensor with intensity: {}", max_intensity);
                         }
                     }
                 }
                 let angle: f32; // Add/sub FRAC_PI here optionally
                 if let Some(sensor) = max_sensor {
-
                     match sensor.positioning {
-                        SensorPosition::Left => angle = SENSOR_ANGLE*-1.0,
-                        SensorPosition::Right => angle = SENSOR_ANGLE,
+                        SensorPosition::Left => angle = SENSOR_ANGLE,
+                        SensorPosition::Right => angle = SENSOR_ANGLE*-1.0,
                         SensorPosition::Center => angle = 0.0,
                     }
-                    println!("New angle: {}", angle);
-                    transform.rotate_z(f32::to_radians(angle) * TIME_STEP);
-                    // transform.rotation = Quat::from_rotation_z(f32::to_radians(angle)+3.14/-2.0);
+                    if max_intensity > 0.0 {
+                        println!("Sensor: {:?} {}", sensor.positioning, sensor.intensity);
+                        transform.rotate_z(f32::to_radians(angle) * TIME_STEP*3.);
+                        found_food = true;
+                        // transform.rotation = Quat::from_rotation_z(f32::to_radians(angle)+3.14/-2.0);
+                    }
                 }
             },
         }
