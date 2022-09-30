@@ -1,4 +1,4 @@
-use bevy::{prelude::*};
+use bevy::{prelude::*, sprite::collide_aabb::{collide, Collision}, ecs::bundle, render::color, window::PresentMode};
 use ant::*;
 use stimulant::*;
 mod ant;
@@ -8,6 +8,13 @@ mod colony;
 
 fn main() {
     App::new()
+        .insert_resource(WindowDescriptor {
+            title: "I am a window!".to_string(),
+            width: 2000.,
+            height: 1000.,
+            present_mode: PresentMode::AutoVsync,
+            ..default()
+        })
         .add_plugins(DefaultPlugins)
         .add_startup_system(setup)
         .add_plugin(AntPlugin)
