@@ -43,11 +43,8 @@ pub fn spawn_colony(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
-    &mut asset_server: &mut Res<AssetServer>,
 ) {
+    println!("spawning colony");
     let starting_location = Vec2::new(0., 0.);
     commands.spawn_bundle(ColonyBundle::new(starting_location, &mut meshes, &mut materials));
-    for _i in 0..COLONY_POP {
-        AntBundle::spawn_ant(&mut commands, &mut meshes, &mut materials, &mut asset_server, starting_location);
-    }
 }

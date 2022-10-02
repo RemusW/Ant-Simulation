@@ -12,8 +12,6 @@ use crate::colony::*;
 const TIME_STEP: f32 = 1.0 / 60.0;
 const ANT_MOVESPEED: f32 = 20.0;
 
-
-
 pub struct AntPlugin;
 
 #[derive(Bundle)]
@@ -41,6 +39,7 @@ impl Plugin for AntPlugin {
     fn build(&self, app: &mut App) {
         app
             .add_startup_system(spawn_colony)
+            .add_startup_system(spawn_ant)
             .add_system(update_sensor)
             .add_system(move_ants);
     }
@@ -49,13 +48,13 @@ impl Plugin for AntPlugin {
 impl AntBundle {
     pub fn new(
         asset_server: &AssetServer,
-        position: Vec2,
+        position: Vec3,
     ) -> AntBundle {
         let mut rng = rand::thread_rng();
         AntBundle {
             sprite: SpriteBundle {
                 transform: Transform {
-                    translation: position.extend(0.),
+                    translation: position,
                     scale: vec3(0.1, 0.1, 1.0),
                     rotation: Quat::from_rotation_z(rng.gen_range(-3.14, 3.14)),
                     ..default()
@@ -71,17 +70,21 @@ impl AntBundle {
         }
     }
     
-    pub fn spawn_ant(
-        mut commands: &mut Commands,
-        meshes: &mut Assets<Mesh>,
-        materials: &mut Assets<ColorMaterial>,
-        asset_server: &mut AssetServer,
-        position: Vec2,
-    ) {
-        let ant_id = commands.spawn_bundle(AntBundle::new(&asset_server, position)).id();
-        let left_sensor = commands.spawn_bundle(SensorBundle::new(SensorPosition::Left, meshes, materials)).id();
-        let right_sensor = commands.spawn_bundle(SensorBundle::new(SensorPosition::Right, meshes, materials)).id();
-        let center_sensor = commands.spawn_bundle(SensorBundle::new(SensorPosition::Center, meshes, materials)).id();
+}
+
+pub fn spawn_ant(
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
+    asset_server: Res<AssetServer>,
+    colonies: Query<&Transform, With<Colony>>,
+) {
+    print!("spawning ants");
+    for colony_position in &colonies {
+        let ant_id = commands.spawn_bundle(AntBundle::new(&asset_server, colony_position.translation)).id();
+        let left_sensor = commands.spawn_bundle(SensorBundle::new(SensorPosition::Left, &mut meshes, &mut materials)).id();
+        let right_sensor = commands.spawn_bundle(SensorBundle::new(SensorPosition::Right, &mut meshes, &mut materials)).id();
+        let center_sensor = commands.spawn_bundle(SensorBundle::new(SensorPosition::Center, &mut meshes, &mut materials)).id();
         // Add sensors as children to the ant
         commands.entity(ant_id).push_children(&[left_sensor]);
         commands.entity(ant_id).push_children(&[right_sensor]);
@@ -89,10 +92,8 @@ impl AntBundle {
     }
 }
 
-
 fn move_ants(
     mut command: Commands,
-    time: Res<Time>,
     mut ants: Query<(&mut Ant, &mut Transform, &Children), With<Ant>>,
     stimulants: Query<(Entity, &Transform, &Food), (With<Food>, Without<Ant>, Without<Sensor>)>,
     sensors: Query<&Sensor, (With<Sensor>, Without<Food>, Without<Ant>)>,
