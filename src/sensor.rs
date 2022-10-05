@@ -52,6 +52,7 @@ impl SensorBundle {
                     translation: pos,
                     ..default()
                 },
+                visibility: Visibility { is_visible: false },
                 material: materials.add(ColorMaterial::from(Color::PURPLE)),
                 ..default()
             }
@@ -60,15 +61,16 @@ impl SensorBundle {
 }
 
 pub fn update_sensor(
-   ants: Query<&Ant>,
-   mut sensors: Query<(&Parent, &mut Sensor, &GlobalTransform), With<Collider>>,
-   pheromones: Query<(&Pheromone, &Transform)>,
+    mut command: Commands,
+    ants: Query<&Ant>,
+    mut sensors: Query<(&Parent, &mut Sensor, &GlobalTransform), With<Collider>>,
+    pheromones: Query<(&Pheromone, &Transform)>,
+    foods: Query<(Entity, &Transform), (With<Food>, Without<Pheromone>, Without<Sensor>)>,
 ) {
     for (parent, mut sensor, sensor_transform) in &mut sensors {
         // Get the sensor's parent ant
         let parent_ant = ants.get(parent.get());
         sensor.intensity = 0.;
-        // sensor_sprite.color = Color::PURPLE;
         if let Ok(ant) = parent_ant {
             for (pheromone, pheromone_transform) in &pheromones {
                 let search_type: PheromoneType;
@@ -87,6 +89,19 @@ pub fn update_sensor(
                     if let Some(_collision) = collision {
                         sensor.intensity += pheromone.intensity;
                     }
+                }
+            }
+            for (food_id, food_trans) in &foods {
+                let sensor_transform = sensor_transform.compute_transform();
+                let collision = collide(
+                    sensor_transform.translation,
+                    sensor_transform.scale.truncate(),
+                    food_trans.translation,
+                    food_trans.scale.truncate(),
+                );
+                if let Some(_collision) = collision {
+                    // Ant detected a collision
+                    sensor.intensity += 100.0;
                 }
             }
         }

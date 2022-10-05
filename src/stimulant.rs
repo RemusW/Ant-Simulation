@@ -3,7 +3,7 @@ use std::time::Duration;
 use crate::ant::*;
 
 const TIME_STEP: f32 = 1.0 / 60.0;
-const PHEROMONE_LIFETIME: f32 = 30.0;
+const PHEROMONE_LIFETIME: f32 = 90.0;
 
 const RED_FOOD: Color = Color::rgba(1.0, 0.0, 0.0, 1.0);
 const BLUE_HOME: Color = Color::rgba(0.0, 0.0, 1.0, 1.0);
@@ -95,7 +95,7 @@ impl Plugin for StimulantPlugin {
 
 fn setup(mut commands: Commands) {
     commands.insert_resource(PheromoneSpawnConfig {
-        timer: Timer::new(Duration::from_secs_f32(0.5), true),
+        timer: Timer::new(Duration::from_secs_f32(0.25), true),
     })
 }
 
