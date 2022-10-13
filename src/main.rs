@@ -8,13 +8,15 @@ mod colony;
 
 fn main() {
     App::new()
-        .insert_resource(WindowDescriptor {
-            title: "I am a window!".to_string(),
-            width: 2000.,
-            height: 1000.,
-            present_mode: PresentMode::AutoVsync,
-            ..default()
-        })
+        // .insert_resource(WindowDescriptor {
+        //     title: "I am a window!".to_string(),
+        //     width: 2000.,
+        //     height: 1000.,
+        //     present_mode: PresentMode::AutoVsync,
+        //     ..default()
+        // })
+        .add_plugin(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(100.0))
+        .add_plugin(RapierDebugRenderPlugin::default())
         .add_plugins(DefaultPlugins)
         .add_startup_system(setup)
         .add_plugin(AntPlugin)

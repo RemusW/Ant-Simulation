@@ -1,5 +1,6 @@
 use bevy::{sprite::{MaterialMesh2dBundle, Mesh2dHandle, Material2d}, prelude::*, sprite::collide_aabb::collide};
-use crate::stimulant::*;
+use bevy_rapier2d::prelude::*;
+use crate::stimulant::{*, self};
 use crate::ant::*;
 
 // Sensor configs
@@ -9,9 +10,10 @@ const SENSOR_RADIUS: f32 = 50.0;
 #[derive(Bundle)]
 pub struct SensorBundle {
     sensor: Sensor,
-    collider: Collider,
+    collider: stimulant::Collider,
     #[bundle]
     meshbundle: MaterialMesh2dBundle<ColorMaterial>,
+    colliderbundle: ColliderBundle,
 }
 
 #[derive(Component)]
